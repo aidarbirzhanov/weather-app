@@ -5,6 +5,7 @@ import WeatherResult from "@/components/WeatherResult.vue";
 
 const isInputEmpty = ref(false)
 const isGeoAPIError = ref(false)
+const pending = ref(false)
 
 const cityInput = ref<string | null>(null)
 
@@ -34,6 +35,8 @@ const onSubmit = async (): Promise<void> => {
   return
  }
 
+ pending.value = true
+
  try {
   const response = await fetch(
     `https://geocoding-api.open-meteo.com/v1/search?name=${cityInput.value}&count=1`
@@ -53,6 +56,8 @@ const onSubmit = async (): Promise<void> => {
   await fetchWeather(latitude, longitude)
  } catch (e) {
   isGeoAPIError.value = true
+ } finally {
+  pending.value = false
  }
 }
 
@@ -97,9 +102,11 @@ const reset = () => {
     </div>
 
     <button
+      :disabled="pending"
       type="submit"
-      class="w-full py-2.5 bg-tButtonBg rounded-lg">
-     Weather Now
+      class="w-full py-2.5 bg-tButtonBg rounded-lg flex justify-center items-center">
+     <span v-if="pending" class="loader"/>
+     <span v-else>Weather Now</span>
     </button>
    </form>
 
@@ -127,3 +134,19 @@ const reset = () => {
 
  </main>
 </template>
+
+<style scoped>
+.loader {
+ border: 3px solid rgba(255, 255, 255, 0.3);
+ border-top: 3px solid white;
+ border-radius: 50%;
+ width: 24px;
+ height: 24px;
+ animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+ 0% { transform: rotate(0deg); }
+ 100% { transform: rotate(360deg); }
+}
+</style>
