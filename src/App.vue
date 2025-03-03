@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import {reactive, ref} from "vue";
 import type { Weather } from "@/types/index.ts";
 import WeatherResult from "@/components/WeatherResult.vue";
 
@@ -9,7 +9,7 @@ const pending = ref(false)
 
 const cityInput = ref<string | null>(null)
 
-const weather = ref<Weather>({
+const weather = reactive<Weather>({
  city: null,
  country: null,
  temperature: null
@@ -22,7 +22,7 @@ const fetchWeather = async (latitude: number, longitude: number): Promise<void> 
     `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`
   )
   const data = await response.json()
-  weather.value.temperature = data.current_weather.temperature
+  weather.temperature = data.current_weather.temperature
  } catch (e) {
   console.error("Error fetching weather data:", e)
  }
@@ -50,8 +50,8 @@ const onSubmit = async (): Promise<void> => {
 
   const { latitude, longitude, country } = data.results[0]
 
-  weather.value.country = country
-  weather.value.city = cityInput.value
+  weather.country = country
+  weather.city = cityInput.value
 
   await fetchWeather(latitude, longitude)
  } catch (e) {
@@ -64,18 +64,17 @@ const onSubmit = async (): Promise<void> => {
 const reset = () => {
  isInputEmpty.value = false
  isGeoAPIError.value = false
- weather.value.city = null
- weather.value.country = null
- weather.value.temperature = null
+ weather.city = null
+ weather.country = null
+ weather.temperature = null
 }
 </script>
 
 <template>
  <main class="flex justify-center items-center h-screen w-full">
-
   <div class="w-1/4">
-   <form @submit.prevent="onSubmit">
 
+   <form @submit.prevent="onSubmit">
     <div class="flex flex-col items-center gap-6 mb-8">
      <img
        src="@/assets/logo.svg"
@@ -84,23 +83,20 @@ const reset = () => {
       Forecast Hub
      </p>
     </div>
-
     <div class="relative">
      <input
        v-model.trim="cityInput"
        placeholder="Enter your city"
        class="w-full py-2.5 mb-6 bg-transparent border-b border-tBorder outline-none placeholder-tPlaceholder"
-       :class="{ 'border-tError placeholder-tError': isInputEmpty || isGeoAPIError }"
+       :class="{ 'border-tError !placeholder-tError': isInputEmpty || isGeoAPIError }"
        @input="reset"
        type="text"/>
-
      <span
        v-if="isInputEmpty"
        class="absolute text-tError right-0 translate-y-1/2">
      *
     </span>
     </div>
-
     <button
       :disabled="pending"
       type="submit"
@@ -112,26 +108,17 @@ const reset = () => {
 
    <div class="relative h-6 w-full mt-8">
     <p
-      v-if="isInputEmpty"
-      class="absolute left-0 right-0 text-center text-tError opacity-0 transition-opacity duration-300"
-      :class="{ 'opacity-100': isInputEmpty }">
-     Please enter the city
+      v-if="isInputEmpty || isGeoAPIError"
+      class="absolute left-0 right-0 text-center text-tError opacity-0"
+      :class="{ 'opacity-100': isInputEmpty || isGeoAPIError }">
+     {{ isInputEmpty ? 'Please enter the city' : 'City not found' }}
     </p>
-
-    <p
-      v-if="isGeoAPIError"
-      class="absolute left-0 right-0 text-center text-tError opacity-0 transition-opacity duration-300"
-      :class="{ 'opacity-100': isGeoAPIError }">
-     City not found
-    </p>
-
     <WeatherResult
       v-if="weather.temperature"
       :weather="weather"/>
-
    </div>
-  </div>
 
+  </div>
  </main>
 </template>
 
