@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Weather } from "@/types/index.ts";
 import { ref } from "vue";
+import type { Weather } from "@/types/index.ts";
 import WeatherResult from "@/components/WeatherResult.vue";
 
 const isInputEmpty = ref(false)
@@ -14,7 +14,7 @@ const weather = ref<Weather>({
  temperature: null
 })
 
-const fetchWeather = async (latitude: number, longitude: number): void => {
+const fetchWeather = async (latitude: number, longitude: number): Promise<void> => {
 
  try {
   const response = await fetch(
@@ -27,7 +27,7 @@ const fetchWeather = async (latitude: number, longitude: number): void => {
  }
 }
 
-const onSubmit = async (): void => {
+const onSubmit = async (): Promise<void> => {
 
  if (!cityInput.value) {
   isInputEmpty.value = true
@@ -40,7 +40,7 @@ const onSubmit = async (): void => {
   )
   const data = await response.json()
 
-  if (!data.results || data.results.length === 0) {
+  if (!data.results) {
    isGeoAPIError.value = true
    return
   }
@@ -52,7 +52,6 @@ const onSubmit = async (): void => {
 
   await fetchWeather(latitude, longitude)
  } catch (e) {
-  console.error("Error fetching city data:", e)
   isGeoAPIError.value = true
  }
 }
@@ -64,7 +63,6 @@ const reset = () => {
  weather.value.country = null
  weather.value.temperature = null
 }
-
 </script>
 
 <template>
