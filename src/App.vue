@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {reactive, ref} from "vue";
+import { reactive, ref } from "vue";
 import type { Weather } from "@/types/index.ts";
 import WeatherResult from "@/components/WeatherResult.vue";
+import { getCityCoords, getWeatherByCoords } from "@/services/weatherService.ts";
 
 const isInputEmpty = ref(false)
 const isGeoAPIError = ref(false)
@@ -15,19 +16,6 @@ const weather = reactive<Weather>({
  temperature: null
 })
 
-const fetchWeather = async (latitude: number, longitude: number): Promise<void> => {
-
- try {
-  const response = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`
-  )
-  const data = await response.json()
-  weather.temperature = data.current_weather.temperature
- } catch (e) {
-  console.error("Error fetching weather data:", e)
- }
-}
-
 const onSubmit = async (): Promise<void> => {
 
  if (!cityInput.value) {
@@ -38,23 +26,16 @@ const onSubmit = async (): Promise<void> => {
  pending.value = true
 
  try {
-  const response = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${cityInput.value}&count=1`
-  )
-  const data = await response.json()
-
-  if (!data.results) {
-   isGeoAPIError.value = true
-   return
-  }
-
-  const { latitude, longitude, country } = data.results[0]
-
-  weather.country = country
+   const cityData = await getCityCoords(cityInput.value)
+   if (!cityData) {
+     isGeoAPIError.value = true
+     return
+   }
   weather.city = cityInput.value
-
-  await fetchWeather(latitude, longitude)
+  weather.country = cityData.country
+  weather.temperature = await getWeatherByCoords(cityData.latitude, cityData.longitude)
  } catch (e) {
+  console.error(e)
   isGeoAPIError.value = true
  } finally {
   pending.value = false
